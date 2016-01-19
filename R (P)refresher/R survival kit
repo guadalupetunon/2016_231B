@@ -1,0 +1,179 @@
+%%%%% PREAMBLE
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1.4in]{geometry} 			%specify margin
+
+\usepackage[T1]{fontenc}
+\usepackage[bitstream-charter]{mathdesign}
+
+\usepackage[latin1]{inputenc}							% Input encoding
+\usepackage{amsmath}									% Math
+
+\usepackage{xcolor}
+\definecolor{gr}{rgb}{0.35, 0.35, 0.35}
+
+
+\usepackage{sectsty}
+\usepackage[compact]{titlesec} 
+\allsectionsfont{\color{gr}\scshape\selectfont}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{rotating}
+
+\usepackage[bibstyle=authoryear, citestyle=authoryear, backref=false, sortcites=true]{biblatex}
+\addbibresource{/Users/guadalupetunon/Dropbox/bibliography/biblio.bib}
+
+% section section_name (end)
+% section section_name (end)
+
+
+%%%%% Definitions
+% Define a new command that prints the title only
+\makeatletter							% Begin definition
+\def\printtitle{%						% Define command: \printtitle
+    {\color{gr} \centering \LARGE \sc \textbf{\@title}\par}}		% Typesetting
+\makeatother							% End definition
+
+\title{%\\ 
+		\large \vspace*{12pt} Advanced Quantitative Methods and Research Design\\
+		 Department of Peace and Conflict Research, Uppsala University.\\
+   July 1-12, 2013.
+		\vspace*{32pt}}
+
+% Define a new command that prints the author(s) only
+\makeatletter							% Begin definition
+\def\printauthor{%					% Define command: \printauthor
+    {\centering \small \@author}}			% Typesetting
+\makeatother							% End definition
+
+\author{%
+\vspace{1pt}
+	Guadalupe Tu\~n\' on \\
+	guadalupe.tunon@yale.edu\\
+	\vspace{15pt}
+	}
+
+
+% Custom headers and footers
+\usepackage{fancyhdr}
+	\pagestyle{fancy}					% Enabling the custom headers/footers
+\usepackage{lastpage}	
+	% Header (empty)
+	\lhead{ }
+	\chead{}
+	\rhead{ }
+	% Footer (you may change this to your own needs)
+	\lfoot{\footnotesize \texttt{ }}
+	\cfoot{\footnotesize \thepage} % "Page number"
+	\rfoot{}	
+	\renewcommand{\headrulewidth}{0.0pt}
+	\renewcommand{\footrulewidth}{0.0pt}
+	
+% Change the abstract environment
+\usepackage[runin]{abstract}			% runin option for a run-in title
+\setlength\absleftindent{30pt}		% left margin
+\setlength\absrightindent{30pt}		% right margin
+\abslabeldelim{\quad}						% 
+\setlength{\abstitleskip}{-10pt}
+\renewcommand{\abstractname}{}
+\renewcommand{\abstracttextfont}{\normalsize \slshape}	
+% slanted text
+
+%%% Start of the document
+\begin{document}
+%%% Top of the page: Author, Title and Abstact
+	\vspace{15pt}
+\printtitle 
+\printauthor
+
+
+%%% Acknowledgements: Rosenbluth, Dunning, De la O, Bueno, Siddiqui, Ashok.
+
+
+\begin{abstract}
+% A successful research proposal starts with a clear statement of a good idea and explains how the idea will be turned into a paper.  A “good idea” is a research question that others have not asked (or answered) or they have asked (and answered) in a different way.  The question should be important for the development of theory or the adjudication of empirical debates in your field.
+% Your research proposal should describe the question, the theoretical framework, the data or evidence that will be collected, and how the data will be analyzed to evaluate your theory. 
+Does exposure to women in local office affect voters' attitudes towards female candidates for higher offices?
+%I answer this question by examining an unusual natural experiment in India in which randomly chosen seats in local legislatures are set aside for women for one election at a time. 
+%Using data from Mumbai, I find that the probability of a woman winning office conditional on the constituency being reserved for women in the previous election is approximately five times the probability of a woman winning office if the constituency had not been reserved for women. 
+%I also explore tentative evidence on the mechanisms by which reservations affect women's ability to win elections. The data suggest that reservations work in part by introducing into politics women who are able to win elections after reservations are withdrawn and by allowing parties to learn that women can win elections.
+\end{abstract}
+\vspace{25pt}
+
+
+
+\section{ } % (fold)
+\label{sec:introduction}
+
+% section introduction
+
+% The puzzle
+Conventional wisdom in Political Science and Economics claims that descriptive representation, particularly descriptive representation of women, brings about substantive representation (\cite{Banerjee2004}). 
+That is, we would expect countries with more women in government to have more female-friendly policies. 
+A usual suspect when looking for exceptions to any rule, Argentina challenges this claim. 
+Latin America, a region that has recently seen a large number of female presidents and has 
+
+
+% Latin America: one of the first regions with gender quotas, female presidents
+% yet no pro-women policy
+% VS duflo et al que dicen que descriptive rep brings substantive representation. 
+% informe europeo de quotas: Most of the countries that today are able to challenge the position of the Nordic countries and the Netherlands have introduced some type of electoral gender quota, as has happened in Argentina, Belgium, Costa Rica, Rwanda, Mozambique, South Africa and Spain – countries that have all passed the 30 per cent threshold. I
+
+% A usual suspect when looking for exceptions to any rule, Argentina XXXXX
+
+
+
+
+% Almost no gender gap, the left has not championed "the female cause"
+
+
+% previous studies say that the lack of gender gap is due to under development
+% yet female labor force participation has been increasing
+
+% argument: in the developing world, increases in FLFP took place IN PARALEL TO the feminization of poverty 
+
+% my argument: the feminization of poverty came together with the feminization of clientelism
+% and this might be able to explain the lack of the turn left. 
+% development will not bring about more substantive representation for women. 
+% YET, CCTs. What happens with this?
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% this project needs.
+
+% MODEL 
+
+% EVIDENCE FOR THE HISTORICAL DIMENSION: Brokers vote men, then started buying women.
+
+% EVIDENCE FOR THE CURRENT DIMENSION
+% This is the hardest part. I would need to be able to show that 
+% I should see that in poorer districts, more men are voting to the left BUT LESS WOMEN. Yet this should be less true in less poor districts. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+\printbibliography
+
+
+
+\end{document}

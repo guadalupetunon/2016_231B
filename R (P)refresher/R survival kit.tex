@@ -1,0 +1,142 @@
+%%%%% PREAMBLE
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1.3in]{geometry} 			%specify margin
+
+\usepackage[T1]{fontenc}
+\usepackage[bitstream-charter]{mathdesign}
+
+\usepackage[latin1]{inputenc}							% Input encoding
+\usepackage{amsmath}									% Math
+
+\usepackage{xcolor}
+\definecolor{gr}{rgb}{0.35, 0.35, 0.35}
+\definecolor{bl}{rgb}{0.0,0.2,0.6} 
+
+
+\usepackage{sectsty}
+\usepackage[compact]{titlesec} 
+\allsectionsfont{\color{bl}\scshape\selectfont}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{rotating}
+
+\usepackage[bibstyle=authoryear, citestyle=authoryear, backref=false, sortcites=true]{biblatex}
+%\addbibresource{/Users/guadalupetunon/Dropbox/bibliography/biblio.bib}
+
+% section section_name (end)
+% section section_name (end)
+
+
+%%%%% Definitions
+% Define a new command that prints the title only
+\makeatletter							% Begin definition
+\def\printtitle{%						% Define command: \printtitle
+    {\color{bl} \centering \LARGE \sc \textbf{\@title}\par}}		% Typesetting
+\makeatother							% End definition
+
+\title{%\\ 
+		\large 
+		Advanced Quantitative Methods and Research Design\\
+       R Survival Kit
+		\vspace*{10pt}}
+
+% Define a new command that prints the author(s) only
+\makeatletter							% Begin definition
+\def\printauthor{%					% Define command: \printauthor
+    {\centering \small \@author}}			% Typesetting
+\makeatother							% End definition
+
+\author{%
+\vspace{1pt}
+	Guadalupe Tu\~n\' on \\
+	\href{mailto:guadalupe.tunon+uppsala@gmail.com}{guadalupe.tunon+uppsala@gmail.com}.\\
+	\vspace{11pt}
+	}
+
+
+% Custom headers and footers
+\usepackage{fancyhdr}
+	\pagestyle{fancy}					% Enabling the custom headers/footers
+\usepackage{lastpage}	
+	% Header (empty)
+	\lhead{ }
+	\chead{}
+	\rhead{ }
+	% Footer (you may change this to your own needs)
+	\lfoot{\footnotesize \texttt{ }}
+	\cfoot{\footnotesize } % "Page number"
+	\rfoot{}	
+	\renewcommand{\headrulewidth}{0.0pt}
+	\renewcommand{\footrulewidth}{0.0pt}
+	
+% Change the abstract environment
+\usepackage[runin]{abstract}			% runin option for a run-in title
+\setlength\absleftindent{30pt}		% left margin
+\setlength\absrightindent{30pt}		% right margin
+\abslabeldelim{\quad}						% 
+\setlength{\abstitleskip}{-10pt}
+\renewcommand{\abstractname}{}
+\renewcommand{\abstracttextfont}{\normalsize \slshape}	
+% slanted text
+
+%%% Start of the document
+\begin{document}
+%%% Top of the page: Author, Title and Abstact
+	\vspace{15pt}
+\printtitle 
+\printauthor
+
+\begin{abstract}
+The \emph{R folder} was designed to be a short introduction to R to prepare students for the course. 
+This document will guide your way through the prep material in the folder.  
+\end{abstract}
+\vspace{15pt}
+
+
+\section{Downloading R.} 
+To download R, please go to \href{http://www.r-project.org/}{http://www.r-project.org/} and follow the directions. 
+
+Some people prefer to use \emph{R studio}, a user interface which is also open source and can be downloaded from \href{http://www.rstudio.com/}{http://www.rstudio.com/}. To use R studio, you need to download and install in your computer both the regular R and R studio. I particularly encourage students that don't find R user-friendly enough to give R studio a try. 
+
+\section{Ross Ihaka's intro to R slides.}
+The "R basics" slides explains how R works and what the basic functions are. It is good to take a look at this slides before using the R code in the next point. 
+
+
+\section{R crash code: an introduction.}
+Once you have downloaded R and gone through the slides, you should open the script called "R crash code.R" that can be found in the same dropbox folder that this file was. The script covers the basic functions you will need to know to program in R. I encourage students to go through the script more than once in order to get more familiarized with the R language and the basic formulas. 
+
+
+\section{Quick help: R reference cards.}
+The third step towards becoming good at R is to choose one of the two reference cards we offer and print it. These cards cover the basic R formulas ordered by topic. I recommend having them at hand while starting with R and highlighting the functions that you use frequently. This will make formulas easier to find later, plus looking at the commands around the formulas that you use frequently might help you find more efficient ways of getting things done.
+
+\section{From getting data to having a dataset.}
+The transition from having data to have a ready to analyze dataset is often times tricky, regardless of whether it is done in R, Stata or Excel. 
+The files in the "from data to dataset" folder are useful guides to learn how to import datasets to R and how to merge or append datasets. 
+
+\newpage
+\section{General guides.}
+\subsection{More material.} 
+There are loads more resources for R that can help move forward once you have covered the basics (click on them for the link):
+\begin{itemize}
+\item The "Using R" pdf in the folder is a very good intro. 
+\item \href{http://jaredknowles.com/r-bootcamp}{Jared Knowles' R Bootcamp.}
+\item \href{http://www.statmethods.net/}{Quick R}, simple code examples to get started quickly.
+\item \href{http://www.r-bloggers.com/}{R bloggers website} with great applications. 
+\end{itemize}
+
+\subsection{Text Editing, Workflow and Coding Best Practices}
+Good work flow will save you from headaches and heartaches!\footnote{Advice borrowed from John Henderson}
+\begin{enumerate}
+\item Always map your work flow in a summary file.
+\item Code well, clearly, and consistently, and comment obsessively!
+\item Good file management starts with you!
+\begin{itemize}
+\item Code like you're drafting an essay for publication.
+\item Use a text editor, and absolutely not the command line.
+\item Run in batches, debug and rerun.
+\end{itemize}
+\end{enumerate} 
+
+\end{document}
