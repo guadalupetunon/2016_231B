@@ -1,7 +1,7 @@
 ---
 title: "231B Section 1"
-author: "Guadalupe Tuñón \\ guadalupe.tunon@berkeley.edu"
-date: "January 22, 2015"
+author: "Guadalupe Tuñón \\ https://github.com/Lupe-/2016_231B"
+date: "January 21, 2015"
 output:
   slidy_presentation:
       fig_height: 5
@@ -23,7 +23,7 @@ Today
 1. Overview
 2. Simulations in R: the birthday problem 
 3. Sampling simulations (one sample)
-4. A function for the difference of two means
+4. Functions in R: the difference of two means
 
 
 Sections
@@ -33,11 +33,12 @@ Sections
 - Illustrating and understanding the concepts covered in lecture
 - Going from learning R to programming in R
 
-For many sections, we will be using codeshare: http://www.codeshare.io/NQ7Gn
 
-> We will be writing simulations and functions at least 80% of our time, so make sure you know how to do both!
+For some sections, we will be using codeshare: http://www.codeshare.io/NQ7Gn
 
-If you think you can still get better at them:
+> We will be writing simulations and functions at least 80% of our time, it will be important to get familiar with this!
+
+Some material to cover the basics:
 
 * Functions: [General thought on what makes a good function](http://nicercode.github.io/guides/functions/), [beginner](http://nicercode.github.io/intro/writing-functions.html), [intermediate/advanced](http://adv-r.had.co.nz/Functions.html). Shalizi on functions, [part 1](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/06/lecture-06.pdf) & [part 2](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/07/lecture-07.pdf).
 * Simulations: [Repeating things](http://nicercode.github.io/guides/repeating-things/), [flow control and looping](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/03/lecture-03.pdf).
@@ -50,8 +51,8 @@ Problem Sets
 - Use [sweave, knitr](https://support.rstudio.com/hc/en-us/articles/200552056-Using-Sweave-and-knitr) or [R markdown](http://rmarkdown.rstudio.com/pdf_document_format.html)
 - When debugging your code, [you might find Cosma Shalizi's advice helpful](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/13/lecture-13.pdf)
 - Practice [defensive programming](http://software-carpentry.org/v5/novice/python/05-defensive.html)
-- Problem sets due at 12 noon on Fridays
-- One document per group
+- Problem sets due at 12 mignight on Wednesdays
+
 
 ----
 
