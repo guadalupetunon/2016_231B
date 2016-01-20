@@ -20,10 +20,9 @@ setwd("~/Dropbox/231B_Spring2015/231b_section_materials_2015/section_1")
 
 Today
 =====================================================================
-1. Overview
-2. Simulations in R: the birthday problem 
-3. Sampling simulations (one sample)
-4. Functions in R: the difference of two means
+1. Overview of sections
+2. Simulations in R: the sample mean
+3. Functions in R: the difference of two means
 
 
 Sections
@@ -33,12 +32,11 @@ Sections
 - Illustrating and understanding the concepts covered in lecture
 - Going from learning R to programming in R
 
+[Six steps to a better relationship with your future self.](http://polmeth.wustl.edu/methodologist/tpm_v18_n2.pdf)
 
 For some sections, we will be using codeshare: http://www.codeshare.io/NQ7Gn
 
-> We will be writing simulations and functions at least 80% of our time, it will be important to get familiar with this!
-
-Some material to cover the basics:
+We will be writing simulations and functions at least 80% of our time - some material to revisit the basics:
 
 * Functions: [General thought on what makes a good function](http://nicercode.github.io/guides/functions/), [beginner](http://nicercode.github.io/intro/writing-functions.html), [intermediate/advanced](http://adv-r.had.co.nz/Functions.html). Shalizi on functions, [part 1](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/06/lecture-06.pdf) & [part 2](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/07/lecture-07.pdf).
 * Simulations: [Repeating things](http://nicercode.github.io/guides/repeating-things/), [flow control and looping](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/03/lecture-03.pdf).
@@ -56,24 +54,6 @@ Problem Sets
 
 ----
 
-
-Why program? (Falster)
-=====================================================================
-
-* Scripting allows you to automate analyses, and therefore scale-up without a big increase in effort
-
-* Easier to pick up a project and start working on it again
-
-* Chunks of code can also be reused in new projects
-
-* Allows for effective collaboration with people 
-
-Nice R code: code that is easy to read, easy to write, runs fast, gives reliable results, is easy to reuse in new projects, and is easy to share with collaborators
-
-[Six steps to a better relationship with your future self.](http://polmeth.wustl.edu/methodologist/tpm_v18_n2.pdf)
-
-
-
 Why program? (Shalizi)
 =====================================================================
 
@@ -83,110 +63,13 @@ Why program? (Shalizi)
 
 - **Clarity**: Making your method something a machine can do disciplines your thinking and makes it public
 
-
 > Programs should be written for people to read, and only incidentally for
 machines to execute (Abelson and Sussman)
 
-
-Programming is writing functions to transform inputs into outputs (Shalizi)
-=====================================================================
-- Good programming ensures the transformation is done easily and correctly
-
-- Machines are made out of machines; functions are made out of functions, like $f(a,b) = a^2 + b^2$
-
-- The route to good programming is to take the big transformation and break it down into smaller ones, and then break those down, until you come to tasks which the built-in functions can do
+- Machines are made out of machines; functions are made out of functions. The route to good programming is to take the big transformation and break it down into smaller ones, and then break those down, until you come to tasks which the built-in functions can do
 
 
-2. The birthday problem (Feller 1957) 
-=====================================================================
-Suppose we sample 25 people from a large population and put them in a room. What is the probability that two or more of them have the same birthday?
-
-`X = number of birthday matches` 
-
-### Simplifying assumptions:
-- Drawing from a *very* large population
-- Birthdays are uniformly distributed throughout the year
-- Ignore leap years and pretend there are only 365 possible birthdays
-
-Is $X$ a random variable? If so, what is the box model?
-
-
-----
-
-We could solve this problem using basic probability, but we will instead write a computer simulation. How can we solve this problem with R?
-
-How would we use R to draw a random sample of $25$ people from this box?
-
-----
-
-Simulating birthdays for $25$ people
-```{r}
-birthdays <- sample(1:365, 25, replace=T)
-birthdays
-```
-
-----
-
-Finding the number of birthday matches among $25$ people
-```{r}
-X <- 25 - length(unique(birthdays))
-```
-Here we have simulated the situation for one room with $25$ people, where there is/are
-`r X` shared birthday(s)
-
-----
-
-If we could repeat this process a very large number of times, we would obtain many realizations of the random variable $X$, and thus a good idea of its distribution.
-
-How could we do this in R?
-
-----
-
-We can use a loop to simulate $X$ for many rooms with $25$ people
-```{r}
-
-X <- NA # Creating placeholder vector
-r <- 10000 # We will simulate 10,000 rooms
-
-for (i in 1:r){ 
-  
-  birthdays <- sample(1:365, 25, replace=T)
-  X[i] <- 25 - length(unique(birthdays))
-  
-}
-```
-
-----
-
-```{r}
-qplot(X, binwidth=.5)
-```
-
------------------
-
-How can we use our 10,000 realizations of $X$ to get the approximate probability of no match $P(X = 0)$ or match $P(X>0)$?
-
-What about $E(X)$?
-
-----
-
-We can count the proportion of rooms with $X=0$
-```{r}
-mean(X!=0)
-```
-
-This is very close to the combinatorial solution which is 0.5687
-
-----
-
-We can take the average of the realizations of $X$ to get a good approximation to $E(X)$.
-```{r}
-mean(X) 
-```
-This result is not easily obtained by combinatorial methods.
-
-
-3a. Sample mean as an unbiased estimator of the population mean
+2. A simulation in R: sample mean as an unbiased estimator of the population mean
 ======================================================================
 
 First we will need to "create" a population, a box of tickets
@@ -237,9 +120,10 @@ How can we use R to show that the sample mean is an unbiased estimator of the po
 
 ----
 
-For this, we will use a simulation. We will repeat the sample process 10,000 times.
+For this, we will write a simulation. We will repeat the sample process 10,000 times.
 
 ```{r}
+
 sample_mean <- NA
 
 for (i in 1:10000){
@@ -312,7 +196,7 @@ for (m in 9:20){
 ```
 
 
-4. Function for the difference of two means
+3. Writing functions in R: the difference of two means
 ======================================================================
 
 ```{r}
@@ -352,7 +236,7 @@ names(gg_data) <- c("Y_i0", "Y_i1")
 save(gg_data, file="gg_data.Rda")
 ```
 
-(`"gg_data.Rda"` uploaded on bcourses)
+(`"gg_data.Rda"` uploaded on bcourses and in the github repository)
 
 ----
 
