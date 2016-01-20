@@ -144,7 +144,7 @@ abline(v=pop_mean, col="red", lwd=2)
 
 ```
 
-3b. Variance of the sample mean as m gets closer to N.
+Let's now look at the distribution of the sample mean as m gets closer to N.
 ======================================================================
 
 So far, $m=8$. We now need a new simulation that adds a new step: we need to vary the size of m.
@@ -155,15 +155,24 @@ So far, $m=8$. We now need a new simulation that adds a new step: we need to var
 
 rep <- 10000
 
+# The first loop varies m
 for (m in 9:20){
-  sample_mean <- NA
+
+  sample_mean <- NA #creating an object to store the results of the second loop
   
+  # The second loop goes through the 10000 simulations
   for (i in 1:rep){
+      
+    #we first get a random sample of size m from the population
     sample <- sample(population, size=m, replace = FALSE)
+    #and then calculate and store the sample mean
     sample_mean[i] <- mean(sample)
   }
   
+  #finally, we plot the distribution of the 10000 sample means for the relevant m
   lines(density(sample_mean), lwd=3,
+        #note that this next line of code varies the color of the line according to m 
+        #so that we can distinguish the different distributions
         col=paste0("grey",140-(7*m)))
 }
 
@@ -220,14 +229,6 @@ diff_means <- function(y, x){
 
 ----
 
-A little silly, but let's do this
-
-```{r}
-print(diff_means)
-```
-
-----
-
 To try our function, we will use the small dataset in Gerber & Green (2012)
 ```{r}
 gg_data <- as.data.frame(cbind(c(10,15,20,20,10,15,15), 
@@ -242,7 +243,9 @@ save(gg_data, file="gg_data.Rda")
 
 We will need to "create" a treatment vector...
 ```{r}
-gg_data$treat <- sample(c(0,1), 7, replace=T)
+# let's fix m=3 (units in the treatment group)
+treat <- c(1, 1, 1, 0, 0, 0, 0)
+gg_data$treat <- sample(treat, 7, replace=F)
 gg_data$treat
 ```
 
@@ -253,32 +256,99 @@ gg_data$observed <- ifelse(gg_data$treat==1, gg_data$Y_i1, gg_data$Y_i0)
 
 ----
 
-```{r}
-with(gg_data, diff_means(observed, treat))
+Let's see how the complete data set looks now:
 
+```{r}
+head(gg_data)
+```
+----
+```{r}
+# mean of the treatment group
 mean(gg_data$Y_i1[gg_data$treat==1])
+# mean of the control group
 mean(gg_data$Y_i0[gg_data$treat==0])
 
+# difference of means
+mean(gg_data$Y_i1[gg_data$treat==1]) - mean(gg_data$Y_i0[gg_data$treat==0])
+  
+# with our function
+diff_means(gg_data$observed, gg_data$treat)
+
 ```
 
-How could we use this to formally test our code?
-
 ----
+
+How can we get a distribution of the difference of means?
+==============================================
+
+Working in groups, we will combine 2 and 3 to write a simulation that generates the distribution of the difference in means.
+
+Let's think about the steps first. 
+
+---
+
+For each simulation, 
+
+> - 1. We will need to "create" a random treatment vector and generate the column with the associated observed outcomes.
+
+> - 2. We will have to calculate the difference between the treatment and control means (by hand or using our new function).
+
+---
 
 ```{r}
 
-diff <- mean(gg_data$Y_i1[gg_data$treat==1]) - mean(gg_data$Y_i0[gg_data$treat==0])
-  
-stopifnot(diff==with(gg_data, diff_means(observed, treat))[3])
+# 1.
+gg_data$treat <- sample(treat, 7, replace=F)
+gg_data$observed <- ifelse(gg_data$treat==1, gg_data$Y_i1, gg_data$Y_i0)
+
+# 2.
+diff_means(gg_data$observed, gg_data$treat)
+# we should store this! so,
+dm <- diff_means(gg_data$observed, gg_data$treat)
+dm
+# but we only want the third element!
+dm <- diff_means(gg_data$observed, gg_data$treat)[3]
+dm
 
 ```
 
 ----
 
+Now let's put this in a loop that allows us to repeat the process 10000 times (and saves the dom for each)..
+
+```{r}
+
+dm <- NA #creating a placeholder to store all our doms...
+
+for (i in 1:10000){
+    
+    # 1.
+    gg_data$treat <- sample(treat, 7, replace=F)
+    gg_data$observed <- ifelse(gg_data$treat==1, gg_data$Y_i1, gg_data$Y_i0)
+    
+    # 2.
+    dm[i] <- diff_means(gg_data$observed, gg_data$treat)[3]
+
+    }
+
+```
+
+----
+
+Finally, let's plot the distribution
+
+```{r}
+hist(dm, col="blue", main="Histogram of Difference of Means \n for GGdata")
+
+```
+
+
+----
 Problem set 1
 ==============================================
 
 - Simulation to show the difference of two means is unbiased
-- Extend the difference of means function to calculate the SE of the difference (we will cover SEs in lecture on Tuesday)
+- Distribution of the difference of means as m changes
+- Extend the difference of means function to calculate the SE of the difference (we will cover SEs in lecture next Tuesday)
 - Replicate figures and tables in Dunning and Harrison (2010) -- you will need your new function for this!
 
