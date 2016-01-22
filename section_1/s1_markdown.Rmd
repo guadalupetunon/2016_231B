@@ -264,12 +264,12 @@ head(gg_data)
 ----
 ```{r}
 # mean of the treatment group
-mean(gg_data$Y_i1[gg_data$treat==1])
+mean(gg_data$observed[gg_data$treat==1])
 # mean of the control group
-mean(gg_data$Y_i0[gg_data$treat==0])
+mean(gg_data$observed[gg_data$treat==0])
 
 # difference of means
-mean(gg_data$Y_i1[gg_data$treat==1]) - mean(gg_data$Y_i0[gg_data$treat==0])
+mean(gg_data$observed[gg_data$treat==1]) - mean(gg_data$observed[gg_data$treat==0])
   
 # with our function
 diff_means(gg_data$observed, gg_data$treat)
