@@ -1,7 +1,7 @@
 ---
 title: "231B Section 1"
 author: "Guadalupe Tuñón \\ https://github.com/Lupe-/2016_231B"
-date: "January 21, 2015"
+date: "January 21, 2016"
 output:
   slidy_presentation:
       fig_height: 5
