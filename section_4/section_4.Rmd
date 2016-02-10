@@ -1,0 +1,391 @@
+---
+title: "231B - Section 4"
+author: "Guadalupe Tuñón"
+date: "February 11, 2016"
+output: slidy_presentation
+---
+
+```{r, echo=FALSE}
+
+rm(list=ls())
+
+# Libraries
+library(MASS)
+
+# wd
+setwd("~/Dropbox/231B_Spring2015/231b_section_materials_2015/section_4")
+
+# sourcing plotting functions
+source("plot_function.R")
+
+```
+
+
+Regression as an algorithm
+============================================
+
+Until last week, we were thinking about regression as an algorithm, a "formula" to minimize the sum of the squared residuals. 
+
+We minimize $$e' e$$ by taking the derivative with respect to $\hat{\beta}$ and setting it equal to $0$ (we can rewrite $e$ as $e = Y-\hat{Y} = Y-X\hat{\beta}$. So we get
+
+$$ \hat{\beta}  = \big( X ' X \big)^{-1} X' Y$$
+
+---
+
+Orthogonal projection of $Y$ onto the column space of $X$
+![](scatter3.png)
+
+---
+
+Are we making any assumptions about the distribution of $Y$?
+
+> - No
+
+Assumptions about the distribution of $X$?
+
+> - No
+
+What about the residuals, $e$?
+
+> - No
+
+
+So what do we need?
+
+> - We need $X$ to be full rank
+
+When $X$ is full rank, is $\hat{\beta}$ biased?
+
+> - It makes no sense to think about bias in this context because $\hat{\beta}$ is not a random variable!
+
+
+Multiple regression model assumptions
+=================================================
+
+- The data on $Y$ are observed values of $X \beta + \epsilon$
+
+- The $\epsilon_i$ are independent and identically distributed, with mean $0$ and variance $\sigma^2$
+
+- The $\epsilon_i$ are independent of $X$
+
+(... and we still need $X$ to be full rank!)
+
+
+Agenda for today
+===============================================================
+
+1. Fitting regression SEs and t-test
+
+2. Monte Carlo simulation: unbiasedness and omitted variable bias
+
+---
+
+An `R` digression 
+===============================================================
+
+- Loading your functions using `source( )`
+
+- The `replicate( )` command for simulations
+
+
+
+1. Fitting regression SEs and t-test
+===============================================================
+
+First we will generate some data following the multivariate regression model, this will be our data generating process (DGP).
+
+```{r}
+x1 <- runif(80, -50, 50)
+x2 <- rnorm(80, 5, 20)
+epsilon <- rnorm(80, 0, 16)
+Y <- 14 + 8 * x1 + 3 * x2 + epsilon
+```
+
+Where is $\sigma$ here? 
+
+What parts of this DGP address each of the assumptions of the regression model?
+
+---
+
+a. Using matrix manipulation, calculate the regression residuals. Show the average of the residuals is zero and find $\hat{\sigma}$ based on sum of squared residuals, divided by $n-p$.
+
+Getting the residuals
+```{r}
+# The first thing we will need here is to build the matrix for X
+X <- cbind(1, x1, x2)
+
+# How do we get the residuals now?
+# We know $e=Y-\hat{Y}=Y-X\hat{\beta}$. So we need to calculate $\hat{\beta}$ first. We did this last section:
+
+betas <- solve(t(X)%*%X) %*% t(X)%*%Y
+
+e <- Y - X %*% betas
+
+```
+
+---
+
+Mean of residuals and $\hat{\sigma}$.
+
+```{r}
+round(mean(e), 4)
+
+hat_sigma2 <- sum(t(e)%*%e) / (nrow(X)-length(betas))
+hat_sigma <- sqrt(hat_sigma2)
+
+hat_sigma
+```
+
+---
+
+b. Plot the residuals against $X$, and against the fitted values $\hat{Y}$.
+
+```{r, fig.height=4}
+
+par(mfrow=c(1,3))
+plot(e, x1, pch=16, col="grey30")
+plot(e, x2, pch=16, col="grey30")
+plot(e, X %*% betas, pch=16, col="grey30")
+
+```
+
+Do you see any pattern? Should you see a pattern? Why or why not? For the latter, do you see a pattern?  
+Would a pattern be evidence against the modeling assumption (e.g., constant variance of $\sigma^2$)?
+
+---
+
+c. Find estimated standard errors from $\hat{\sigma^2}(X'X)^{-1}$.
+
+```{r}
+
+var_hat_beta <- hat_sigma2 * solve((t(X)%*%X)) # Why do we use * instead of %*% here?
+var_hat_beta 
+```
+
+What elements of this matrix do we care about?
+
+```{r}
+se_hat_beta <- sqrt(diag(var_hat_beta))
+se_hat_beta
+
+```
+
+---
+
+d. Conduct t-test based on $\hat{\beta}/\hat{SE}$. 
+
+```{r}
+
+t_stats <- betas/se_hat_beta
+t_stats
+
+for (i in 1:3){
+  
+  p_val <- pt(abs(t_stats[i]), df=(nrow(X)-length(betas)), ncp=0, lower.tail = F) + 
+    pt(-abs(t_stats[i]), df=(nrow(X)-length(betas)), ncp=0, lower.tail = T)
+  
+  print(p_val)
+}
+
+```
+
+Are these one or two-tailed tests?
+
+
+2. Monte Carlo simulation: unbiasedness and omitted variable bias
+===============================================================
+  
+To prove unbiasedness, we need to show that $E(\hat{\beta})=\beta$.
+
+$$E\big[ \hat{\beta} \mid X \big] = E\big[ (X'X)^{-1}X'Y \mid X \big]$$
+
+Say, however, that the real model is $Y=X\beta+Z\mu+\epsilon$. Then when we substitute for $Y$ we have:
+
+$$\begin{align*}
+E\big[ \hat{\beta} \mid X \big] & = E\big[ (X'X)^{-1}X'(X\beta+Z\mu+\epsilon)  \mid X \big] \\
+& = E\big[ (X'X)^{-1}X'X\beta+ (X'X)^{-1}X'Z\mu + (X'X)^{-1}X'\epsilon  \mid X \big] \\
+& = E\big[ (X'X)^{-1}X'X\beta  \mid X \big]+ E\big[(X'X)^{-1}X'Z\mu  \mid X \big] + E\big[ (X'X)^{-1}X'\epsilon  \mid X \big] \\
+& = E\big[ \beta  \mid X \big] + E\big[(X'X)^{-1}X'Z\mu  \mid X \big] + (X'X)^{-1}X'E\big[ \epsilon  \mid X \big] \\
+& = \beta + (X'X)^{-1}X'Z\mu + (X'X)^{-1}X'0 \\
+& = \beta + (X'X)^{-1}X'Z\mu 
+\end{align*}$$
+  
+---  
+  
+Let's take a closer look at $(X'X)^{-1}X'Z\mu$ 
+
+- When $\mu$ is zero, all the expression is $0$ and our regression of $Y$ on $X$ captures the real DGP.
+
+- When $X'Z=0$, the correlation between $X$ and $Z$ the entire expression is also $0$.
+
+- What happens when $X'Z \not 0$? Can we know anything about the direction or magnitude of the bias?
+  
+---  
+  
+We will program a simulation to see this. We will need to write a function that takes the following arguments and returns the regression coefficients for the regression we indicate:
+
+- n = sample size
+
+- muX = the true means of the covariates
+
+- sigmaX = the true variance-covariance matrix of $X$
+
+- betas = true parameters of the model
+
+- sigmae = true standard deviation of the epsilon
+
+- omitted = indicator--should we omit the third variable in the regression?
+
+---
+  
+```{r}
+
+ovb_sim <- function(n=100, muX=c(0,0,0), sigmaX, betas, sigmae, omitted=FALSE){
+  
+  # Draw the simulated covariates from their true
+  # multivariate Normal distribution
+  X <- mvrnorm(n, muX, sigmaX)
+  
+  # Create the simulated y by
+  # adding together the systematic and stochastic
+  # components, according to the true model
+  # note that we are adding column of 1s for the intercept
+  y <- cbind(1, X) %*% betas + rnorm(n)*sigmae
+  
+  # Run a regression of the simulated y on the simulated X 
+  # with the option of omitting x2 or not
+  if (omitted==FALSE) res <- lm(y~X) # complete model
+  if (omitted==TRUE) res <- lm(y~X[,c(1,2)]) # omitting the third variable
+  
+  # Extract the estimated coefficients
+  coefs <- res$coefficients
+  
+  # Return the coefficients
+  return(coefs)
+}
+```
+
+---
+  
+We will look at four different cases: 
+  
+1. The three independent variables belong in the real model and they are correlated -- and we specify the right regression.
+
+2. The three independent variables belong in the real model and they are correlated (positive covariance) -- our regression omits $x_3$
+
+3. The three independent variables belong in the real model and they are correlated (negative covariance) -- our regression omits $x_3$
+
+4. The three independent variables belong in the real model but they are not correlated -- our regression omits $x_3$
+
+---
+
+First we will need to create the matrices with the variances and covariances of $X$.
+
+> - What is the key thing to consider when we build these matrices?
+
+---
+  
+```{r}
+
+# True variance-covariance matrices
+# Here the off-diagonal elements are zero, so they variables are not correlated
+# with each other
+SigmaX_without <- matrix(c( 1,  0,  0,
+                            0,  1,  0,
+                            0,  0,  1 ), nrow=3, ncol=3, byrow=TRUE)
+# Now in these the off-diagonal elements are non-zero (the variables are correlated)
+SigmaX_with_positive <- matrix(c( 1,  .5,  .5,
+                                 .5,   1,  .5,
+                                 .5,  .5,   1 ), nrow=3, ncol=3, byrow=TRUE)
+
+SigmaX_with_negative <- matrix(c(  1,  -.5,  -.5,
+                                 -.5,    1,  -.5,
+                                 -.5,  -.5,    1 ), nrow=3, ncol=3, byrow=TRUE)
+
+# For all models, let's also define the true stadard deviation of the error term
+sigma <- sqrt(2)
+```
+---
+
+Which of these estimators would we expect to be biased?
+
+1. The three independent variables belong in the real model and they are correlated -- and we specify the right regression.
+```{r}
+reg1 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_with_positive, 
+                                 betas=c(1,2,4,3), sigmae=sigma, omitted=FALSE))
+```
+
+2. The three independent variables belong in the real model and they are correlated (positive covariance) -- our regression omits $x_3$
+
+```{r}
+reg2 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_with_positive, 
+                                 betas=c(1,2,4,3), sigmae=sigma, omitted=TRUE))
+```
+
+
+3. The three independent variables belong in the real model and they are correlated (positive covariance) -- our regression omits $x_3$
+```{r}
+reg3 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_with_negative, 
+                                 betas=c(1,2,4,3), sigmae=sigma, omitted=TRUE))
+```
+
+4. The three independent variables belong in the real model but they are not correlated -- our regression omits $x_3$
+
+```{r}
+reg4 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_without, 
+                                 betas=c(1,2,4,3), sigmae=sigma, omitted=TRUE))
+```
+
+
+
+---
+  
+Recall $\beta_0=1$, $\beta_1=2$, $\beta_2=4$ and $\beta_3=3$.
+  
+```{r}
+
+# Average OLS estimate across 10000 simulation runs: 
+apply(reg1, 1, mean) # correlated covariates but complete model
+apply(reg2, 1, mean) # positively correlated covariates and omitted variable
+apply(reg3, 1, mean) # negatively correlated covariates and omitted variable
+apply(reg4, 1, mean) # non-correlated covariates and omitted variable
+
+```
+
+---
+
+```{r, echo=FALSE, fig.height=5}
+plotfunc(coefs=reg1, betas=c(1,2,4,3), omitted=FALSE, 
+         maintitle="Complete model")
+
+```
+
+---
+  
+```{r, echo=FALSE, fig.height=5}
+
+plotfunc(coefs=reg2, betas=c(1,2,4,3), omitted=TRUE, 
+         maintitle="Omitted variable (positive covariance)")
+
+```
+
+---
+
+```{r, echo=FALSE, fig.height=5}
+
+plotfunc(coefs=reg3, betas=c(1,2,4,3), omitted=TRUE, 
+         maintitle="Omitted variable (negative covariance)")
+```
+
+---
+  
+```{r, echo=FALSE, fig.height=5}
+
+plotfunc(coefs=reg4, betas=c(1,2,4,3), omitted=TRUE, 
+         maintitle="Omitted variable (zero correlation)")
+
+```
+
+Why is the sampling distributions of the estimators tighter for the first simulation (slide 23) than in in this plot? 
+Hint: what is the disturbance variability in each case?
+
