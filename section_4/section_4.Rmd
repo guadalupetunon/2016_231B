@@ -38,11 +38,6 @@ $$ \hat{\beta}  = \big( X ' X \big)^{-1} X' Y$$
 
 ---
 
-Orthogonal projection of $Y$ onto the column space of $X$
-![](scatter3.png)
-
----
-
 Are we making any assumptions about the distribution of $Y$?
 
 > - No
@@ -116,7 +111,7 @@ What parts of this DGP address each of the assumptions of the regression model?
 
 ---
 
-a. Using matrix manipulation, calculate the regression residuals. Show the average of the residuals is zero and find $\hat{\sigma}$ based on sum of squared residuals, divided by $n-p$.
+Using matrix manipulation, calculate the regression residuals. Show the average of the residuals is zero and find $\hat{\sigma}$ based on sum of squared residuals, divided by $n-p$.
 
 Getting the residuals
 ```{r}
@@ -144,22 +139,6 @@ hat_sigma <- sqrt(hat_sigma2)
 
 hat_sigma
 ```
-
----
-
-b. Plot the residuals against $X$, and against the fitted values $\hat{Y}$.
-
-```{r, fig.height=4}
-
-par(mfrow=c(1,3))
-plot(e, x1, pch=16, col="grey30")
-plot(e, x2, pch=16, col="grey30")
-plot(e, X %*% betas, pch=16, col="grey30")
-
-```
-
-Do you see any pattern? Should you see a pattern? Why or why not? For the latter, do you see a pattern?  
-Would a pattern be evidence against the modeling assumption (e.g., constant variance of $\sigma^2$)?
 
 ---
 
