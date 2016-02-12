@@ -1,9 +1,9 @@
 # Plot smoothed histograms showing the distribution of estimated coefficients
 plotfunc <- function(maintitle="", coefs, omitted=FALSE, betas){
   plot.new()
-  par(usr=c(-2,6.5,0,3))
+  par(usr=c(-2,6.5,0,4))
   axis(1,at=seq(-2,6.5,1))
-  axis(2,at=seq(0,3,1))
+  axis(2,at=seq(0,4,1))
   title(ylab="Density", main=maintitle)
   
   # colors

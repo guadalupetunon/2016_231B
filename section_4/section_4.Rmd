@@ -8,12 +8,17 @@ output: slidy_presentation
 ```{r, echo=FALSE}
 
 rm(list=ls())
+set.seed(94705)
+# wd
+setwd("~/Dropbox/Teaching/231B_Spring2016/231b_github/section_4")
 
+
+```
+
+
+```{r}
 # Libraries
 library(MASS)
-
-# wd
-setwd("~/Dropbox/231B_Spring2015/231b_section_materials_2015/section_4")
 
 # sourcing plotting functions
 source("plot_function.R")
@@ -21,12 +26,13 @@ source("plot_function.R")
 ```
 
 
+
 Regression as an algorithm
 ============================================
 
 Until last week, we were thinking about regression as an algorithm, a "formula" to minimize the sum of the squared residuals. 
 
-We minimize $$e' e$$ by taking the derivative with respect to $\hat{\beta}$ and setting it equal to $0$ (we can rewrite $e$ as $e = Y-\hat{Y} = Y-X\hat{\beta}$. So we get
+We minimize $$e' e$$ by taking the derivative with respect to $\hat{\beta}$ and setting it equal to $0$ (we can rewrite $e$ as $e = Y-\hat{Y} = Y-X\hat{\beta}$). So we get
 
 $$ \hat{\beta}  = \big( X ' X \big)^{-1} X' Y$$
 
@@ -95,9 +101,12 @@ An `R` digression
 First we will generate some data following the multivariate regression model, this will be our data generating process (DGP).
 
 ```{r}
+#generating variation in x1 and x2 (note this does not mean we are treating them as random variables).
 x1 <- runif(80, -50, 50)
 x2 <- rnorm(80, 5, 20)
+
 epsilon <- rnorm(80, 0, 16)
+
 Y <- 14 + 8 * x1 + 3 * x2 + epsilon
 ```
 
@@ -214,7 +223,7 @@ E\big[ \hat{\beta} \mid X \big] & = E\big[ (X'X)^{-1}X'(X\beta+Z\mu+\epsilon)  \
   
 Let's take a closer look at $(X'X)^{-1}X'Z\mu$ 
 
-- When $\mu$ is zero, all the expression is $0$ and our regression of $Y$ on $X$ captures the real DGP.
+- When $\mu$ is zero, all the expression is $0$ and our regression of $Y$ on $X$ allows us to estimate \beta without bias.
 
 - When $X'Z=0$, the correlation between $X$ and $Z$ the entire expression is also $0$.
 
@@ -226,13 +235,9 @@ We will program a simulation to see this. We will need to write a function that 
 
 - n = sample size
 
-- muX = the true means of the covariates
-
-- sigmaX = the true variance-covariance matrix of $X$
+- X matrix (more about this later)
 
 - betas = true parameters of the model
-
-- sigmae = true standard deviation of the epsilon
 
 - omitted = indicator--should we omit the third variable in the regression?
 
@@ -240,18 +245,14 @@ We will program a simulation to see this. We will need to write a function that 
   
 ```{r}
 
-ovb_sim <- function(n=100, muX=c(0,0,0), sigmaX, betas, sigmae, omitted=FALSE){
-  
-  # Draw the simulated covariates from their true
-  # multivariate Normal distribution
-  X <- mvrnorm(n, muX, sigmaX)
+ovb_sim <- function(X, betas, e, omitted=FALSE){
   
   # Create the simulated y by
   # adding together the systematic and stochastic
   # components, according to the true model
   # note that we are adding column of 1s for the intercept
-  y <- cbind(1, X) %*% betas + rnorm(n)*sigmae
-  
+  y <- cbind(1, X) %*% betas + sample(e, 100, replace=F)
+ 
   # Run a regression of the simulated y on the simulated X 
   # with the option of omitting x2 or not
   if (omitted==FALSE) res <- lm(y~X) # complete model
@@ -290,9 +291,9 @@ First we will need to create the matrices with the variances and covariances of 
 # True variance-covariance matrices
 # Here the off-diagonal elements are zero, so they variables are not correlated
 # with each other
-SigmaX_without <- matrix(c( 1,  0,  0,
-                            0,  1,  0,
-                            0,  0,  1 ), nrow=3, ncol=3, byrow=TRUE)
+SigmaX_without <- matrix(c( 2,  0,  0,
+                            0,  2,  0,
+                            0,  0,  2 ), nrow=3, ncol=3, byrow=TRUE)
 # Now in these the off-diagonal elements are non-zero (the variables are correlated)
 SigmaX_with_positive <- matrix(c( 1,  .5,  .5,
                                  .5,   1,  .5,
@@ -302,8 +303,25 @@ SigmaX_with_negative <- matrix(c(  1,  -.5,  -.5,
                                  -.5,    1,  -.5,
                                  -.5,  -.5,    1 ), nrow=3, ncol=3, byrow=TRUE)
 
-# For all models, let's also define the true stadard deviation of the error term
-sigma <- sqrt(2)
+
+```
+
+
+And now we can use this to generate the `X` matrices (note we use `mvrnorm()`)
+
+```{r}
+
+# Draw the simulated covariates from their true
+# multivariate Normal distribution
+X_without <- mvrnorm(n=200, mu=c(0,0,0), Sigma=SigmaX_without)
+X_with_positive <- mvrnorm(n=200, mu=c(0,0,0), Sigma=SigmaX_with_positive)
+X_with_negative <- mvrnorm(n=200, mu=c(0,0,0), Sigma=SigmaX_with_negative)
+
+# and the vector for the error term
+error <- rnorm(200)*2
+
+
+
 ```
 ---
 
@@ -311,29 +329,29 @@ Which of these estimators would we expect to be biased?
 
 1. The three independent variables belong in the real model and they are correlated -- and we specify the right regression.
 ```{r}
-reg1 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_with_positive, 
-                                 betas=c(1,2,4,3), sigmae=sigma, omitted=FALSE))
+reg1 <- replicate(10000, ovb_sim(X=X_with_positive, e=error,
+                                 betas=c(1,2,4,3), omitted=FALSE))
 ```
 
 2. The three independent variables belong in the real model and they are correlated (positive covariance) -- our regression omits $x_3$
 
 ```{r}
-reg2 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_with_positive, 
-                                 betas=c(1,2,4,3), sigmae=sigma, omitted=TRUE))
+reg2 <- replicate(10000, ovb_sim(X=X_with_positive, e=error,
+                                 betas=c(1,2,4,3), omitted=TRUE))
 ```
 
 
 3. The three independent variables belong in the real model and they are correlated (positive covariance) -- our regression omits $x_3$
 ```{r}
-reg3 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_with_negative, 
-                                 betas=c(1,2,4,3), sigmae=sigma, omitted=TRUE))
+reg3 <- replicate(10000, ovb_sim(X=X_with_negative, e=error,
+                                 betas=c(1,2,4,3), omitted=TRUE))
 ```
 
 4. The three independent variables belong in the real model but they are not correlated -- our regression omits $x_3$
 
 ```{r}
-reg4 <- replicate(10000, ovb_sim(n=100, muX=c(0,0,0), sigmaX=SigmaX_without, 
-                                 betas=c(1,2,4,3), sigmae=sigma, omitted=TRUE))
+reg4 <- replicate(10000, ovb_sim(X=X_without, e=error,
+                                 betas=c(1,2,4,3),  omitted=TRUE))
 ```
 
 
@@ -386,6 +404,5 @@ plotfunc(coefs=reg4, betas=c(1,2,4,3), omitted=TRUE,
 
 ```
 
-Why is the sampling distributions of the estimators tighter for the first simulation (slide 23) than in in this plot? 
-Hint: what is the disturbance variability in each case?
+Why is this not just centered exactly around the parameter?
 
