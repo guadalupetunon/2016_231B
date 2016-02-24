@@ -1,0 +1,332 @@
+---
+title: "231B - Section 5"
+author: "Guadalupe Tuñón"
+date: "February 18, 2016"
+output: slidy_presentation
+---
+
+```{r, eval=FALSE}
+
+rm(list=ls())
+#install.packages("sem")
+library(sem)
+
+```
+
+```{r, echo=FALSE}
+
+library(sem)
+set.seed(5000)
+
+```
+
+---
+
+## Today
+
+- An IV example
+- Small sample bias of the IV estimator (Monte Carlo simulation)
+
+
+---
+
+An IV example in the potential outcomes framework
+=========================================================
+
+**Generating potential outcomes**
+
+Potential outcomes for compliers
+```{r}
+#potential outcome when instrument is 0 
+r_0_0 <- runif(1000)*10
+#Potential outcome when instrument is 1
+r_1_1 <- r_0_0 + 2.5
+
+data <- as.data.frame(cbind(r_0_0, r_1_1))
+names(data) <- c("r_0_0", "r_1_1")
+```
+
+What will be the value of the potential outcomes for never treats when assigned to the instrument? Why?
+
+What about the potential outcomes for the always treats who get assigned to the control instrument? Why? What are we assuming?
+
+
+---
+
+**Treatment:** For each unit, we need to know their treatment status if they receive the instrument vs. when they don't.
+
+Let's first create the treatment indicators as if every unit was a complier. Compliers take the treatment if the instrument is 1, don't get treated if instrument is 0.
+```{r}
+data$t_0 <- rep(0, 1000) # gets control if instrument=0
+data$t_1 <- rep(1, 1000) # gets treamtent if instrument=1
+```
+
+Never takers NEVER get the treatment, independent of the value of the instrument.
+```{r}
+data$t_1[1:200] <- 0 # the first 200 units will be never treats
+```
+
+Now let's include 150 never treats and 200 always takers. Always takers ALWAYS get the treatment, independent of the value of the instrument.
+```{r}
+data$t_0[201:400] <- 1 # units 201 to 351 will be always treats
+```
+
+---
+
+Let's see the configuration of types:
+```{r}
+
+table(data$t_0, data$t_1)
+
+```
+
+Now let's create an indicator for each type
+```{r}
+data$complier <- as.numeric(data$t_1==1 & data$t_0==0)
+data$always_taker <- as.numeric(data$t_1==1 & data$t_0==1)
+data$never_taker <- as.numeric(data$t_1==0 & data$t_0==0)
+```
+
+---
+
+Let's make the complier average causal effect different from the average causal effect.
+```{r}
+
+data$r_1_1[data$complier] <- data$r_1_1[data$complier] + 1
+# What is now the complier causal treatment effect?
+
+```
+
+---
+
+**Instrument**
+
+```{r}
+data$z <- sample(c(rep(0, 500), rep(1, 500)), 1000, replace=F)
+
+```
+
+**Realized treatment and outcome vectors**
+```{r}
+data$t <- ifelse(data$z==1, data$t_1, data$t_0)
+data$r <- ifelse(data$t==1, data$r_1_1, data$r_0_0)
+
+```
+
+---
+**What is the true average causal effect?**
+
+---
+
+**What is the true average causal effect?**
+```{r}
+ACE <-  mean(data$r_1_1 - data$r_0_0)
+ACE
+```
+
+---
+
+**What is the true average causal effect of treatment on compliers?**
+
+---
+
+**What is the true average causal effect of treatment on compliers?**
+```{r}
+ACE_compliers <- mean(data$r_1_1[data$complier] - data$r_0_0[data$complier])
+ACE_compliers 
+```
+
+
+---
+
+**What is the effect of the instrument on treatment?**
+
+---
+
+**What is the effect of the instrument on treatment?**
+
+```{r}
+mean(data$t[data$z==1]) - mean(data$t[data$z==0])
+```
+
+
+```{r}
+lm(data$t ~ data$z)$coefficients
+
+Z <- cbind(1, data$z)
+solve(t(Z)%*%Z) %*% (t(Z)%*%data$t)
+
+```
+
+Note that here we are using regression, but there is no real regression model. We do this because the $\hat{\beta}$ is algebraically equivalent to the difference in means (as you have shown in PS 3), but this data generating process does not follow a regression model.
+
+
+---
+
+**What is the ITT estimate?**
+
+---
+
+**What is the ITT estimate?**
+
+```{r}
+ITT <- mean(data$r[data$z==1])-mean(data$r[data$z==0])
+ITT
+```
+
+```{r}
+
+lm(data$r ~ data$z)$coefficients
+
+solve(t(Z)%*%Z) %*% (t(Z)%*%data$r)
+
+```
+
+--- 
+
+**What about the IV estimate?**
+```{r}
+
+IV <- ITT / (mean(data$t[data$z==1]) - mean(data$t[data$z==0]))
+IV 
+
+
+```
+
+```{r}
+
+# "By hand"
+fit.2a <- lm(data$t ~ data$z)
+t_hat <- fit.2a$fitted
+fit.2b <- lm(data$r ~ t_hat) #### coefficients ok, but SE WRONG! 
+fit.2b
+
+# With package
+summary(tsls(r~t,~z,data=data))
+
+
+```
+
+---
+
+**Using the hat matrix**
+
+```{r}
+
+hat_t <- Z %*% solve(t(Z)%*%Z) %*% (t(Z)%*%data$t)
+
+HAT_t <- cbind(1, hat_t)
+
+solve( t( HAT_t ) %*% HAT_t ) %*% ( t( HAT_t ) %*% data$r )
+
+```
+
+---
+
+**What is the bias?**
+
+```{r}
+
+bias <- IV - ACE_compliers 
+bias
+
+```
+
+---
+
+## Small sample bias of the IV estimator
+
+Now let's put the intuition of what we have done above into programming a simulation that shows that the IV estimator is biased but consistent.
+
+Would we do this differently if we used the Neyman model vs a regression model? If so, what would be the difference between these simulations?
+
+---
+
+We will use the population we created above, but instead of using a fixed number of units, we will sample from it to vary N.
+
+How do we write a simulation that runs experiments of different sizes and calculates the  `ACE_compliers` and the sampling distribution of the `IV` estimator for each?
+
+```{r, eval=FALSE}
+
+N <- seq(50, 5000, by=100)
+
+ACE_compliers <- NULL
+IV <- NULL
+
+for (i in 1:length(N)){ 
+    
+    # we reuse data so that we dont need to build the dataset each time. 
+    sim_data <- data[sample(1:nrow(data), N[i], replace=T), ]
+    
+    ACE_compliers[i] <- mean(sim_data$r_1_1[sim_data$complier]) - mean(sim_data$r_0_0[sim_data$complier])
+  
+    ### some simulation that repeats sampling many times with this dataset fixed
+    ## returns a vector with IV estimates
+    
+
+}
+
+```
+
+
+
+
+
+
+```{r}
+
+experiment <- function(sim_data){ # by default in the function we will have m=N/2
+
+  z <- sample(sim_data$z, nrow(sim_data), replace=F)
+
+  t <- ifelse(z==1, sim_data$t_1, sim_data$t_0)
+  r <- ifelse(t==1, sim_data$r_1_1, sim_data$r_0_0)
+  
+  ITT <- mean(r[z==1]) - mean(r[z==0])
+  
+  IV <- ITT / (mean(t[z==1]) - mean(t[z==0]))
+  
+  return(IV)
+    
+}
+
+```
+
+---
+
+We want to replicate this several times varying N
+
+```{r}
+
+N <- seq(50, 2000, by=25)
+
+ACE_compliers <- NULL
+IV <- matrix(NA, length(N), 10000)
+
+for (i in 1:length(N)){ 
+
+    # we reuse data so that we dont need to build the dataset each time. 
+    sim_data <- data[sample(1:nrow(data), N[i], replace=T), ]
+  
+    ### some simulation that repeats sampling many times with this dataset fixed
+    ## returns a vector with IV estimates
+    IV[i,] <- replicate(10000, experiment(sim_data))  
+
+
+}
+
+```
+
+---
+
+```{r}
+
+IV_mean <- apply(IV, 1, mean)
+bias <- IV_mean - 2.5 #ACE for compliers
+
+plot(N, bias, type="l", col="slateblue", lwd=3)
+
+```
+
+
+
