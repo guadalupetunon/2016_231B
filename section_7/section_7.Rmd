@@ -1,0 +1,291 @@
+---
+title: "231B - Section 7"
+author: "Guadalupe Tuñón"
+date: "March 5, 2015"
+output: slidy_presentation
+---
+
+```{r, ref.label="intro setup"}
+
+rm(list=ls())
+
+```
+
+
+Today: 
+===================================================================
+
+- Brief note on diff in diffs
+
+- Clustering
+
+- OLS vs GLS
+
+
+
+Difference in differences
+===================================================================
+
+What do coefficient plots for the difference tell us about the test statistic for the difference in differences?
+
+Cases when the confidence intervals overlap vs. when they don't.
+
+
+
+Clustering
+===================================================================
+
+DGP
+```{r}
+
+m <- 80 # cluster size
+C <- 100 # nr of clusters
+N <- m*C
+cl <- rep(1:C, each=m)
+
+y_0 <- c(rnorm(N/8, 0, 2), rnorm(N/4, 3, 2), rnorm(N/4, 5, 1), 
+         rnorm(N/4, 7, 1), rnorm(N/8, 8, 2))
+y_1 <- y_0 + rnorm(N, 3, 1)
+
+
+```
+
+What is the average causal effect?
+```{r}
+
+ACE <- mean(y_1) - mean(y_0)
+ACE
+```
+
+---
+
+We will assign 4000 units to treatment and 4000 to control
+
+```{r}
+
+simulation <- function(){
+    
+    simple_random <- sample(c(rep(1, N/2), rep(0, N/2)), N, replace=F)
+    
+    clusters_treat <- sample(1:C, C/2, replace=FALSE)
+    
+    
+    g <- function(x) {sum(x==clusters_treat)}
+    
+    cluster_random <- unlist(lapply(cl, FUN=g))
+
+    # diff in means simple random assignment
+    dm_sr <- mean(y_1[simple_random==1]) - mean(y_0[simple_random==0])
+    
+    # diff in means cluster assignment, individual
+    dm_cl <- mean(y_1[cluster_random==1]) - mean(y_0[cluster_random==0])
+
+    # diff in means cluster assignment, cluster means
+    cl_treat <- unlist(lapply(clusters_treat, FUN=function(x) mean(y_1[cl==x])))
+    cl_control <- unlist(lapply(as.vector(1:C)[-(clusters_treat)], 
+                                 FUN=function(x) mean(y_0[cl==x])))
+    dm_cl_cl <- mean(cl_treat) - mean(cl_control)
+    
+    return(c(dm_sr, dm_cl, dm_cl_cl))
+    
+}        
+```
+
+
+---
+
+```{r}
+
+simulation()
+
+sims <- replicate(10000, simulation())
+
+```
+
+How do we expect the results to lool like?
+
+---
+
+```{r}
+plot(density(sims[1, ]), col="red", lwd=3, xlim=c(min(sims),max(sims)))
+abline(v=ACE, col="grey", lwd=3)
+```
+
+---
+
+```{r}
+plot(density(sims[1, ]), col="red", lwd=3, xlim=c(min(sims),max(sims)))
+abline(v=ACE, col="grey", lwd=3)
+lines(density(sims[2, ]), col="slateblue", lwd=3)
+```
+
+---
+
+```{r}
+plot(density(sims[1, ]), col="red", lwd=3, xlim=c(min(sims),max(sims)))
+abline(v=ACE, col="grey", lwd=3)
+lines(density(sims[2, ]), col="slateblue", lwd=3)
+lines(density(sims[3, ]), col="deepskyblue", lwd=3, lty=3)
+```
+
+---
+
+```{r}
+apply(sims, MARGIN=1, FUN=mean)
+apply(sims, MARGIN=1, FUN=sd)
+
+
+
+```
+
+
+The problem: OLS and Heteroscedasticity
+===================================================================
+
+Setup
+```{r}
+
+y_0 <- rnorm(100, 0, 1)
+y_1 <- y_0 + rnorm(100, 2, 10)
+
+sd(y_0)
+sd(y_1)
+
+treat <- rbinom(100, 1, .5)
+Y <- ifelse(treat==1, y_1, y_0)
+
+```
+
+---
+
+```{r}
+
+source("~/Dropbox/r_functions/t_test.R")
+ttest(Y, treat)
+summary(lm(Y~treat))
+
+```
+
+---
+
+As you have shown in the last problem set, it will often be the case in experiments that 
+$$E(\epsilon|T) \not= \sigma^2$$ 
+Indeed,
+$$E(\epsilon_i|T_i=1)=Var(Y_i(1))$$
+$$E(\epsilon_i|T_i=0)=Var(Y_i(0))$$
+which are only equal when $$Var(Y_i(1))=Var(Y_i(0))$$
+
+---
+
+Back to section 4. How do we calculate $SE(\hat{\beta})$ when we assume homoskedasticity?
+
+```{r}
+# The first thing we will need here is to build the matrix for X
+X <- cbind(1, treat)
+
+# getting the betas
+betas <- solve(t(X)%*%X) %*% t(X)%*%Y
+
+# and the residuals
+e <- Y - X %*% betas
+
+# and now we want the estimated sigma squared
+hat_sigma2 <- sum(t(e)%*%e) / (nrow(X)-length(betas))
+
+# and we can find estimated standard errors from $\hat{\sigma^2}(X'X)^{-1}$.
+var_hat_beta <- hat_sigma2 * solve((t(X)%*%X)) # Why do we use * instead of %*% here?
+
+# and get the SEs for our betas
+se_hat_beta <- sqrt(diag(var_hat_beta))
+se_hat_beta
+
+```
+
+
+---
+
+The White-Huber correction
+====================================================
+
+$$\hat{cov}(\hat{\beta})=(X'X)^{-1}(X'\hat{G}X)(X'X)^{-1}$$
+
+The shortcut
+```{r}
+library(sandwich)
+sqrt(vcovHC(lm(Y~treat), type="HC3")[2,2])
+
+```
+
+---
+
+Let's go through what happens under the hood:
+
+1. First get the square of the residuals
+```{r}
+
+e <- Y - X %*% betas
+e2 <- (e)^2
+
+```
+
+2. Now we will calculate $X'\hat{G}X$
+```{r}
+
+XG_hatX <- 0
+
+# We will do this with a loop. Here, I will print all the steps so that 
+# you can see what happens with each iteration of the loop
+
+for(i in 1:nrow(X)) {
+    
+    print(paste0("################### OBSERVATION ",i," ###########################"))
+    print("(XX') for this observation")
+    print(X[i,]%*%t(X[i,]))
+    
+    print("e^2*(XX') for this observation")
+    print(e2[i]*X[i,]%*%t(X[i,]))
+    
+    XG_hatX <- XG_hatX + e2[i]*X[i,]%*%t(X[i,])
+    print("updated (X'G_hatX)")
+    print(XG_hatX)
+}
+
+
+```
+
+---
+
+This is the "meat"
+```{r}
+XG_hatX
+```
+
+3. Now we need the "bread": $(X'X)$
+```{r}
+
+XprimeX <- solve(t(X)%*%X)
+```
+
+4. Variance calculation (bread x meat x bread)
+```{r}
+varcovar_betas <- XprimeX %*% XG_hatX %*% XprimeX
+```
+
+5. Degrees of freedom adjustment
+```{r}
+dfc <- sqrt(nrow(X))/sqrt(nrow(X)-ncol(X))
+```
+
+6. Standard errors of the estimated coefficients are the square roots of the diagonal elements
+```{r}
+dfc*sqrt(diag(varcovar_betas))
+```
+
+... which match those from the t-test
+```{r}
+ttest(Y, treat)
+```
+
+
+
+

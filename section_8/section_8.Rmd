@@ -1,0 +1,284 @@
+---
+title: "Section 8"
+author: "Guadalupe Tuñón"
+date: "April 10, 2016"
+output: slidy_presentation
+---
+
+Today: MLE
+===============================
+- Stochastic and systematic components (example: logit)
+- Deriving and plotting the likelihood function
+- Finding the MLE and its SE
+- Reporting MLE results
+
+
+
+The DGP: Stochastic Component
+===============================
+
+$$Y_i ~ Y_{Bern}(y_i|\pi_i) = (\pi_i)^{y_i} (1-\pi_i)^{(1-y_i)}$$
+
+Simplifies to $\pi_i$ if $y_i=1$ and $(1-pi_i)$ if $y_i=0$.
+
+But what is $\pi_i$? For that we need a link function. 
+
+
+
+The Logistic Link Function
+===============================
+
+Systematic component: 
+
+$$\sigma(x) = \frac{1}{1+e^{-x}} = \frac{e^x}{1+e^x}$$
+
+Note that $$\sigma(x) \in [0,1]$$ for all $x$
+
+We can program this:
+
+```{r}
+logistic <- function(x){ exp(x) / (1 + exp(x)) }
+
+```
+
+---
+
+```{r}
+
+curve(logistic(x), xlim=c(-8, 8), xlab="x", main="CDF of the logistic distribution",
+      ylab="cumulative probability", col="blue", lwd=3)
+
+```
+
+---
+
+With covariates, we have
+
+$$F(X\beta) = \frac{1}{1+e^{-X\beta}} = \frac{e^{X\beta}}{1+e^{X\beta}}$$
+
+So: 
+
+$$P(y_i=1|\beta) = \pi_i= \frac{1}{1+e^{-X\beta}}$$
+
+$$P(y_i=0|\beta) = 1 - \pi_i= 1 - (\frac{1}{1+e^{-X\beta}})$$
+
+
+---
+
+A small dataset
+
+```{r}
+
+Y <- c(1, 0, 1, 0, 0, 1, 1)
+x <- c(.5, .3, .45, .4, .25, .7, .9)
+
+cbind(Y, x)
+
+```
+
+What is the full probability distribution of these observations?
+
+---
+
+$$P(y|\pi) = \prod_{i=1}^{n} \pi^{y_i} (1-\pi_i)^{1-y_i}$$
+
+where $\pi_i = F(x_i\beta) = \frac{1}{1+e^{-x_i\beta}}$
+
+And so the likelihood is $$L = P(y|X\beta) = \prod_{i=1}^{n} F(x_i\beta)^{y_i} (1-F(x_i\beta))^{1-y_i}$$
+
+And the log-likelihood $$ lnL = \sum_{i=1}^{n} y_i * ln[F(x_i\beta)] + (1-y_i) * ln[1-F(x_i\beta)]$$
+
+----
+
+We can program the likelihood in `R`:
+
+```{r}
+
+LL <- function(beta, x, y){
+    
+    odds <- beta * x
+    
+    rate <- 1 / (1 + exp(-odds))
+    
+    sum( y * log(rate) + (1 - y) * log(1 - rate) )
+}
+
+```
+
+---
+
+And we can plot the log-likelihood of our fake data:
+
+```{r}
+
+LL_example <- function(x){
+    
+    odds <- x * c(.5, .3, .4, .4, .25)
+    
+    rate <- 1 / (1 + exp(-odds))
+    
+    y <- c(1, 0, 1, 0, 0)
+    
+    sum(ifelse(y==1, log(rate), log(1 - rate)))
+    
+}
+
+betas <- seq(-10, 10, by=.01)
+ll_betas <- unlist(lapply(betas, FUN=LL_example)) # no intercept here
+```
+
+---
+
+```{r, fig.height=4}
+par(mfrow=c(1,2))
+plot(betas, ll_betas, col="blue", type="l", lwd=3, ylab="log-likelihood")
+plot(betas, ll_betas, col="blue", type="l", lwd=3, ylab="log-likelihood", xlim=c(-5, 5))
+
+```
+
+What's the value of $\beta$ tha maximizes the log-likelihood?
+
+---
+
+Getting the MLE.
+
+```{r}
+
+beta.start <- 0
+out  <-  optim(beta.start, 
+            fn=LL,
+            x=x,y=Y,
+            hessian=T,
+            method="L-BFGS-B",
+            control=list(fnscale=-1))
+out
+
+```
+
+---
+
+```{r}
+
+mle <- out$par
+mle
+
+glm(Y~0+x, family=binomial(logit))
+
+vcov <- -solve(out$hessian)
+
+```
+
+
+
+
+How should we present the results?
+==========================
+
+1. Simulate betas
+
+```{r}
+
+simbetas <- rnorm(100000, mle, sqrt(vcov)) 
+par(mfrow=c(1,1))
+plot(density(simbetas), col="slateblue", lwd=3)
+```
+
+---
+
+2. Simulate predicted value
+
+Let's say we get econ data for one more observation and we want to predict the probability of $y=1$
+
+```{r}
+
+new_obs <- .45 # our new data point
+
+cov <- simbetas * new_obs
+pred.p <- 1 / (1+exp(-cov))
+mean(pred.p)
+
+#hist(pred.p, col="goldenrod", main="predicted probability")
+#abline(v=mean(pred.p), col="red", lwd=3)
+
+quantile(pred.p, probs = c(0.25, 0.75))
+
+```
+
+---
+
+3. Simulate expected values
+```{r}
+
+# for the binomial distribution, the expected value equals 
+# the rate, so to get the expected value we can just take
+# the expectation of the predicted probabilities (for other
+# distributions this might not hold, and we might want to 
+# do the simulation of the stochastic component as well)
+# so here we could just do
+mean(pred.p)
+
+```
+
+---
+
+Simulate first differences
+
+```{r}
+
+new_obs
+new_obs.better <- 0.65
+
+cov <- simbetas * new_obs.better
+pred.p.2 <- 1 / (1 + exp(-cov))
+
+# to get the expected value, here we can again just take the 
+# mean of the predicted probabilities
+mean(pred.p.2)
+
+
+#now lets get the first difference
+firs.diff <- mean(pred.p.2) - mean(pred.p)
+firs.diff 
+```
+
+An increase in the independent variable is associated with an increase in the outcome.
+
+---
+
+Predicted probabilities plot
+
+How would we do the plot of predicted probabilities?
+
+```{r}
+# Let's take values of X from -1 to 1
+x_sim <- seq(-1, 1, by=.01)
+
+pred.prob <- matrix(NA, length(x_sim), 3)
+
+for(i in 1:length(x_sim)){
+
+    cov <- simbetas * x_sim[i]
+    pred.p <- 1/(1+exp(-cov))
+    
+    pred.prob[i,1] <- mean(pred.p)
+    pred.prob[i,2] <- quantile(pred.p, probs=.05) # lower CI
+    pred.prob[i,3] <- quantile(pred.p, probs=.95) # upper CI
+}
+
+head(pred.prob)
+```
+
+---
+
+```{r}
+
+plot(x_sim, pred.prob[,1], 
+     col="slateblue", type="l", 
+     lty=1, lwd=3, main="Predicted probabilities",
+     xlab="x", ylab="predicted probability", ylim=c(min(pred.prob), max(pred.prob)))
+lines(x_sim,pred.prob[,2], col="slateblue", type="l", lty=3, lwd=2 )
+lines(x_sim,pred.prob[,3], col="slateblue", type="l", lty=2, lwd=2 )
+
+
+```
+

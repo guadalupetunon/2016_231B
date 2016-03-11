@@ -1,0 +1,315 @@
+---
+title: "231B - Section 6"
+author: "Guadalupe Tuñón"
+date: "February 27, 2015"
+output: slidy_presentation
+---
+
+```{r}
+
+rm(list=ls())
+
+```
+
+
+Today: 
+===================================================================
+**Using (not abusing) covariates in analysis**
+
+- Rescaling the dependent variable so that potential outcomes have less variance. 
+
+- Covariates as moderators (heterogeneous treatment effects)
+
+- Problem set, problem 5
+
+---
+
+A DGP (building losely from Miguel et. al)
+===================================================================
+
+```{r}
+
+# Pre-treatment covariates
+conflict_pre <- rnorm(100, 95, 4)
+rural <- rbinom(100, 1, .7)
+ethnic_frac <- rnorm(100, .45, .3)
+
+
+# Potential outcomes
+y_i0 <- 2.5*conflict_pre
+y_i1 <- y_i0 - rnorm(100, 10, 5) + rnorm(100, 4*ethnic_frac, 3) - 8*rural
+
+```
+
+---
+```{r, echo=FALSE, fig.height=5}
+plot(y_i0, y_i1, pch=16, col="slateblue")
+```
+
+```{r}
+true_ace <- mean(y_i1) - mean (y_i0)
+true_ace
+
+```
+
+---
+
+Difference in differences: a simulation
+===================================================================
+
+```{r}
+
+experiment <- function(){
+    
+    rainfall <- rbinom(100, 1, .5)
+    observed_conflict <- ifelse(rainfall==1, y_i1, y_i0)
+
+    # simple difference of means
+    DM <- t.test(observed_conflict ~ rainfall)$estimate[2] - 
+                    t.test(observed_conflict ~ rainfall)$estimate[1] 
+    
+    # rescaling outcome (difference in differences)
+    rescaled <- observed_conflict - conflict_pre
+    DiD <- t.test(rescaled ~ rainfall)$estimate[2] - 
+                    t.test(rescaled ~ rainfall)$estimate[1] 
+
+    # return
+    return(c(DM, DiD))
+    
+}
+
+```
+
+---
+
+```{r}
+
+reps <- replicate(5000, experiment())
+rownames(reps) <- c("DM", "DiD")
+
+plot(density(reps[1,]), col="slateblue", main="DM", lwd=3, ylim=c(0, .3))
+lines(density(reps[2,]), col="deepskyblue", lwd=3)
+abline(v=true_ace, lwd=2, col="darkorange")
+
+apply(reps, MARGIN=1, FUN=mean)
+apply(reps, MARGIN=1, FUN=sd)
+
+```
+
+What can we say about the difference between these estimators? Is one of them "better"? If so, how so?
+
+---
+
+Our simulation shows the unbiasedness of the DiD estimator. 
+
+In terms of precision, we saw in lecture that the DiD estimator may be more precise, but that this is true only when the pre-treatment value of the outcome strongly predicts potential outcomes. Formally, 
+
+$$ Cov(Y_i(0), X_i) + Cov(Y_i(1), X_i) > Var(X_i) $$
+
+What are the values for these elements in our example?
+```{r}
+
+var(conflict_pre)
+
+cov(y_i1, conflict_pre)
+cov(y_i0, conflict_pre)
+
+cov(y_i1, conflict_pre) + cov(y_i0, conflict_pre) > var(conflict_pre)
+
+```
+
+How can we modify the simulation to show this?
+
+
+---
+
+```{r}
+
+potential_outcomes <- function(sd_x){
+    
+    conflict_pre <- rnorm(100, 95, sd_x)
+    
+    y_i0 <- 2.5*conflict_pre
+    y_i1 <- 1.1*y_i0 - 10 + 4*ethnic_frac - 2*rural
+    
+    return(cbind(y_i1, y_i0))
+    
+    }
+   
+experiment <- function(PO){
+    
+    rainfall <- rbinom(100, 1, .5)
+    observed_conflict <- ifelse(rainfall==1, PO$y_i1, PO$y_i0)
+
+    # rescaling outcome (difference in differences)
+    rescaled <- observed_conflict - conflict_pre
+    DiD <- t.test(rescaled ~ rainfall)$estimate[2] - 
+                    t.test(rescaled ~ rainfall)$estimate[1] 
+
+    # return
+    return(DiD)
+    
+}
+
+sim <- function(sd_x){
+    
+    PO <- as.data.frame(potential_outcomes(sd_x=sd_x))
+    
+    reps <- replicate(5000, experiment(PO=PO))
+    
+    lines(density(reps), col="deepskyblue", lwd=3)
+    
+}
+
+```
+
+---
+
+What do we expect as $sd(X)$ increases?
+
+```{r}
+
+sd_x <- seq(.1, 10, by=2.5)
+sd_x 
+
+PO <- as.data.frame(potential_outcomes(sd_x=sd_x[1]))
+reps <- replicate(5000, experiment(PO=PO))
+plot(density(reps), col="slateblue", lwd=3, xlim=c(6,23))
+
+for (i in 2:length(sd_x)){    
+    sim(sd_x=sd_x[i])
+}
+
+```
+
+---
+
+Moderators in experiments
+===================================================================
+
+Let's go back to our original example and take one of the possible experiments. 
+
+```{r}
+
+rainfall <- rbinom(100, 1, .5)
+observed_conflict <- ifelse(rainfall==1, y_i1, y_i0)
+
+t.test(observed_conflict ~ rainfall)
+```
+
+Our ``theory'' predicts that we the effect of rainfall should be larger in rural than urban communities. How can we incorporate this to our empirical analysis?
+
+---
+
+To make the analysis easier, let's put the data in a dataframe
+```{r}
+data <- as.data.frame(cbind(rural, conflict_pre, observed_conflict, rainfall))
+
+
+test.rural <- with(data[rural==1,], t.test(observed_conflict ~ rainfall))
+test.rural
+
+test.urban <- with(data[rural==0,], t.test(observed_conflict ~ rainfall))
+test.urban
+
+```
+
+Can we conclude something from this analysis?
+
+---
+
+```{r}
+
+d.r <- test.rural$estimate[1] - test.rural$estimate[2]
+d.u <- test.urban$estimate[1] - test.urban$estimate[2]
+
+min <- round(min(test.urban$conf.int), 0)
+max <- round(max(test.rural$conf.int), 0)
+    
+plot(1:2, c(d.r, d.u), ylim=c(min,max), pch=16, col="slateblue", 
+     ylab="Difference in means", axes=F, xlab="")
+segments(1:2, c(test.rural$conf.int[1], test.urban$conf.int[1]), 
+         1:2, c(test.rural$conf.int[2], test.urban$conf.int[2]),
+         lwd=2, col="slateblue")
+axis(2, seq(min, max, round(abs(max/min), 0)))
+axis(1, 1:2, labels=c("rural", "urban"))
+
+```
+
+What can we say about this? Does the rural vs. urban divide matter? Why? Why not?
+
+---
+
+We want a formal test for the difference between these differences. 
+
+What elements do we need to calculate that?
+
+```{r}
+diff_in_diff <- d.r - d.u
+```
+
+How do we find the SE of this difference?
+
+---
+
+```{r}
+
+rural <- data[data$rural==1,]
+urban <- data[data$rural==0,]
+
+var1.r <- var(rural$observed_conflict[rural$rainfall==1])
+var0.r <- var(rural$observed_conflict[rural$rainfall==0])
+varN1.r <- var1.r/length(rural$observed_conflict[rural$rainfall==1])
+varN0.r <- var0.r/length(rural$observed_conflict[rural$rainfall==0])
+se.diff.r <- sqrt(varN1.r + varN0.r)
+
+d.r/se.diff.r
+test.rural
+
+var1.u <- var(urban$observed_conflict[urban$rainfall==1])
+var0.u <- var(urban$observed_conflict[urban$rainfall==0])
+varN1.u <- var1.u/length(urban$observed_conflict[urban$rainfall==1])
+varN0.u <- var0.u/length(urban$observed_conflict[urban$rainfall==0])
+se.diff.u <- sqrt(varN1.u + varN0.u)
+
+d.u/se.diff.u
+test.urban
+
+```
+
+
+So what's the SE of the difference?
+
+---
+
+```{r}
+
+diff_in_diff
+
+SE_diff <- sqrt(se.diff.u^2 + se.diff.r^2)
+SE_diff
+
+pnorm(diff_in_diff/SE_diff) # (one-tailed)
+
+````
+
+---
+```{r}
+
+upper <- diff_in_diff + 1.96*SE_diff
+lower <- diff_in_diff - 1.96*SE_diff
+min <- min(min, lower)
+
+plot(1:2, c(d.r, d.u), ylim=c(min,max), pch=16, col="slateblue", 
+     ylab="Difference in means", axes=F, xlab="")
+segments(1:2, c(test.rural$conf.int[1], test.urban$conf.int[1]), 
+         1:2, c(test.rural$conf.int[2], test.urban$conf.int[2]),
+         lwd=2, col="slateblue")
+axis(2, seq(min, max, round(abs(max/min), 0)))
+points(1.5, diff_in_diff, pch=16, col="darkorange")
+segments(1.5, upper,  1.5, lower, lwd=2, col="darkorange")
+axis(1, c(1, 1.5, 2), labels=c("rural", "diff in diff", "urban"))
+
+```
+
+How should we interpret this difference? 
