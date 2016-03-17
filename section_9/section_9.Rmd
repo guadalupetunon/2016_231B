@@ -17,11 +17,11 @@ output:
 
 ## Bootstrapping
 
-- So far, we have covered methods for hypothesis testing that require information about the population distribution and/or analytical formulas (there is one exception for this, what is it?)
+- So far, we have covered methods for hypothesis testing that require information about the population distribution and/or we rely on approximations to the normal curve for the sampling distributions of sample means or sums (there is one exception for this, what is it?)
 
-- But sometimes we don't know how the population looks like or there are no analytical formulas to estimate the uncertainty of point estimates.
+- But sometimes we don't know what the population looks like or we cannot rely on the central limit theorem to construct confidence intervals.
 
-- For that, we use the bootstrap---we approximate the population distribution by using the information in the sample. 
+- In such settings, we use the bootstrap---we approximate the population distribution by using the information in the sample. 
 
 ---
 
@@ -32,11 +32,11 @@ output:
 
 - Bootstrap resampling is a methodology for approximating the sampling distribution of an estimator of interest.
 
-- The sampling distribution is derived by using the sample.
+- The population distribution is approximated by the empirical sample---which we then take as a `bootstrap population' from which we resample.
 
-- We draw samples with replacement from the data and, for each simulated sample, store the statistic of interest.
+- We draw samples with replacement from the bootstrap population (i.e., the original empirical sample and, for each simulated sample, store the statistic of interest.
 
-- The histogram of these simulation statistics estimates the sampling distribution of the estimator. 
+- The histogram of these statistics estimates the sampling distribution of the estimator. 
 
 - The SD of the simulation statistics estimates the SE of the estimator.
 
@@ -46,7 +46,7 @@ output:
 
 ## Bootstrap (mean)
 
-Say we collected the following simple random sample:
+Say we collected the following simple random sample from a very large population--so that we could treat the sample as i.i.d. draws from that large population.
 
 ```{r, fig.height=3, fig.width=4}
 # Some data
@@ -133,11 +133,11 @@ hist(y, breaks=10)
 ---
 What is the trimmed mean of our sample?
 ```{r}
-y_bart <- trimmed.mean(y, k=3)
-y_bart
+sample_trimmedmean <- trimmed.mean(y, k=3)
+sample_trimmedmean
 ```
 
-How can we calculate a CI for the trimmed mean?
+How can we estimate a CI for the trimmed mean?
 
 ---
 
@@ -165,16 +165,16 @@ for(b in 1:B){
 ## plot histogram and empirical cdf
 par(mfrow=c(1,2))
 hist(boot,breaks=20)
-abline(v=y_bart, col="red",lwd=3)
+abline(v=sample_trimmedmean, col="red",lwd=3)
 abline(v=quantile(boot,c(.025,.975)),col="red", lty=2) #CI
 
 plot(ecdf(boot), xlab="trimmed mean", ylab="")
 mtext(text = expression(hat(F)[n](x)), side = 2, line = 2.5)
-abline(v=y_bart, col="red",lwd=3)
+abline(v=sample_trimmedmean, col="red",lwd=3)
 abline(v=quantile(boot,c(.025,.975)),col="red", lty=2) #CI
 ```
 
-How do we calculate the SE of our observed trimmed mean?
+How do we estimate the SE of our observed trimmed mean?
 
 ---
 ```{r}
@@ -201,7 +201,14 @@ plot(LSAT,GPA, pch=16, col="blue")
 ## calculate empirical correlation of the data
 r.hat <- cor(LSAT,GPA)
 r.hat
+```
 
+- We can use the bootstrap to estimate the CI of the correlation.
+
+- Key point: we are assuming the data were i.i.d. draws (as pairs) from an underlying population.
+
+---
+```{r}
 ## bootstrap
 B <- 10000
 n <- length(LSAT)
@@ -238,9 +245,11 @@ abline(v=quantile(r.boot,c(.025,.975)),col="red", lty=2)
 
 ##Bootstrapping a regression model
 
-We will use the `swiss` dataset to run a regression of `education` on `infant mortality`. We will then use the bootstrap to calculate $SE(\hat{\beta})$. Note that to use the bootstrap we need to assume a model (for the sake of the exercise, we will believe this assumption despite it is not very credible in this context).
+We will use the `swiss` dataset to run a regression of `education` on `infant mortality`. We will then use the bootstrap to estimate $SE(\hat{\beta})$. Note that to use the bootstrap we need to assume a model (for the sake of the exercise, we will believe this assumption despite it is not very credible in this context).
 
 $$ Education_{i} = \alpha + \beta * IM_{i} + \epsilon_{i} $$
+
+Note here we are making the usual OLS assumptions. Note that we are treating \texttt{IM} as fixed.
 
 ```{r}
 
@@ -254,9 +263,24 @@ yhat <- ols$fitted
 e <- ols$residuals
 
 ```
+
 ---
 
-We will now use the bootstrap to calculate $SE(\hat{\beta})$.
+What is the mean of the residuals?
+```{r}
+mean(e)
+```
+Why is mean zero e important given the OLS model?
+
+What is the variance of the residuals?
+```{r}
+mean((e-mean(e))^2)
+```
+Why shouldn't we use n-1 in the denominator to calculate this variance?
+
+---
+
+We will now use the bootstrap to estimate $SE(\hat{\beta})$.
 ```{r}
 betaboot <- rep(NA,B)
 
@@ -281,6 +305,7 @@ quantile(betaboot, c(.025,.975))
 abline(v=quantile(betaboot,c(.025,.975)), col="red", lty=2)
 
 ```
+
 ---
 
 We can also compare the bootstrap SE to the $SE(\hat{\beta})$ from OLS.
@@ -292,25 +317,17 @@ summary(ols)
 ```
 
 ---
+
 ## Panel data
 
 ```{r, echo=FALSE}
-library(foreign)
-Panel <- read.dta("http://dss.princeton.edu/training/Panel101.dta")
+load("~/Dropbox/Teaching/231B_Spring2016/231b_github/section_9/country_data.Rda")
 ```
 
 Panel data (also known as longitudinal or cross sectional time-series data) is a data set in which the behavior of entities are observed across time. These entities could be states, companies, individuals, countries, etc.
 
 ```{r}
-head(Panel)
-```
-
----
-
-Bars at top indicates corresponding graph (i.e. countries) from left to right starting on the bottom row.
-
-```{r, fig.height=8, fig.width=6}
-coplot(y ~ year|country, type="b", data=Panel) # Points and lines
+head(country_data)
 ```
 
 ---
@@ -323,8 +340,8 @@ For this exercise, we will focus on the heterogeneity acroos countries:
 
 ```{r, fig.height=4, fig.width=9}
 par(mfrow=c(1,2))
-plotmeans(y ~ country, main="Heterogeineity across countries", data=Panel)
-plotmeans(y ~ year, main="Heterogeineity across years", data=Panel)
+plotmeans(y ~ country, main="Heterogeineity across countries", data=country_data)
+plotmeans(y ~ year, main="Heterogeineity across years", data=country_data)
 ```
 
 ```{r, echo=FALSE}
@@ -335,31 +352,32 @@ par(mfrow=c(1,1))
 
 Regular OLS does not consider heterogeneity across groups or time...
 ```{r, fig.height=4}
-ols <-lm(y ~ x1, data=Panel)
+ols <-lm(y ~ x1, data=country_data)
 summary(ols)
 ```
 ---
 
 ```{r, fig.height=5, fig.width=5}
 par(mfrow=c(1,1))
-plot(Panel$x1, Panel$y, pch=19, xlab="x1", ylab="y")
-abline(lm(Panel$y~Panel$x1),lwd=3, col="red")
+plot(country_data$x1, country_data$y, pch=19, xlab="x1", ylab="y")
+abline(lm(country_data$y~country_data$x1),lwd=3, col="red")
 
 ```
 ---
 
 ## Fixed effects
 
-Fixed-effects models help to isolate the effects of \textit{within-unit} variation---though coefficients are pooled across units.
+Fixed-effects models help to isolate the effects of within-unit variation---though coefficients are pooled across units.
 
-$$ Y_{it}= \alpha_i + \beta D_{it} + \epsilon_{it} $$ where there is one dummy variable (``fixed effect") $\alpha_i$ for each unit $i$ (here unit=country).
+$$ Y_{it}= \alpha_i + \beta D_{it} + \epsilon_{it} $$ where there is one dummy variable (``fixed effect") $\alpha_i$ for each unit $i$ (here unit=country). This fixed-effect is a unit-specific intercept.
 
 How will the design matrix look here?
+
 ---
 
 ```{r}
 
-fixed.dum <-lm(y ~ x1 + factor(country) - 1, data=Panel)
+fixed.dum <-lm(y ~ x1 + factor(country) - 1, data=country_data)
 summary(fixed.dum)
 
 ```
@@ -370,15 +388,15 @@ Each component of the factor variable (country) is absorbing the variation parti
 
 ```{r, echo=FALSE}
 library(car)
-library(apsrtable)
 ```
 
 ```{r, fig.height=6, fig.width=6}
 
 yhat <- fixed.dum$fitted
-scatterplot(yhat~Panel$x1|Panel$country,
-            xlab="x1", ylab="yhat")
-abline(lm(Panel$y~Panel$x1), lwd=5, col="black")
+scatterplot(yhat~country_data$x1|country_data$country,
+            xlab="x1", ylab="yhat", legend.coords="topright")
+abline(lm(country_data$y~country_data$x1), lwd=5, col="black")
+
 
 ```
 
